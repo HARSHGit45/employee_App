@@ -22,6 +22,7 @@ function uploadExcel() {
             const sheetName = document.getElementById('sheetName').value;
             const daysInMonth = parseInt(document.getElementById('daysInMonth').value);
             const department = document.getElementById('department').value;
+            const wd = document.getElementById('wd').value;
 
             if (!sheetName || isNaN(daysInMonth) || !department) {
                 alert("Please fill out all fields.");
@@ -83,6 +84,7 @@ function uploadExcel() {
             document.getElementById('sheetInfo').innerText = `Sheet Name: ${sheetName}`;
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
+            document.getElementById('wdd').innerText = `Working days: ${wd}`;
             document.getElementById('infoFooter').classList.remove('d-none');
             
 
