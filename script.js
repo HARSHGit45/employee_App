@@ -3,7 +3,7 @@ var dept = '';
 function uploadExcel() {
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
-
+    
     if (!file) {
         alert("No file selected!");
         return;
@@ -14,17 +14,28 @@ function uploadExcel() {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
 
-        // Show the modal for user input
+        // Populate dropdown with sheet names
+        const sheetDropdown = document.getElementById('sheetNameDropdown');
+        sheetDropdown.innerHTML = ""; // Clear previous options
+
+        workbook.SheetNames.forEach(sheetName => {
+            const option = document.createElement('option');
+            option.value = sheetName;
+            option.textContent = sheetName;
+            sheetDropdown.appendChild(option);
+        });
+
+        // Show modal after file is processed and dropdown is populated
         $('#dataModal').modal('show');
 
         // Event listener for the submit button in the modal
         document.getElementById('submitData').onclick = function() {
-            const sheetName = document.getElementById('sheetName').value;
+            const sheetName = sheetDropdown.value; // Get selected sheet name
             const daysInMonth = parseInt(document.getElementById('daysInMonth').value);
             const department = document.getElementById('department').value;
             const wd = document.getElementById('wd').value;
 
-            dept  = department;
+            dept = department;
 
             if (!sheetName || isNaN(daysInMonth) || !department) {
                 alert("Please fill out all fields.");
@@ -38,7 +49,11 @@ function uploadExcel() {
             }
 
             const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            let json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+
+            json = json.slice(2);
+
 
             // Process JSON to match your required structure
             const employeeData = [];
