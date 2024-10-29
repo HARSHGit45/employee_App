@@ -87,7 +87,7 @@ function uploadExcel() {
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
             document.getElementById('wdd').innerText = `Working days: ${wd}`;
-            document.getElementById('hrs').innerText = `Total Expected Working Hours: ${wd*8}`;
+            document.getElementById('hrs').innerText = `Total Expected Working Hours: ${(wd-1)*8}`;
             document.getElementById('infoFooter').classList.remove('d-none');
             
 
@@ -147,6 +147,7 @@ function calculateTotalWorkingDays() {
         let totalWorkingDays = 0;
         let leavesTaken = 0;
         let halfDaysTaken = 0;
+        let attng = 0;
 
         employee.Attendance.forEach(record => {
             const status = record.Status.trim().toUpperCase();
@@ -155,18 +156,20 @@ function calculateTotalWorkingDays() {
             } else if (status === "1/2P 1/2CL") {
                 totalWorkingDays += 0.5; // Half present
                 halfDaysTaken += 1; // Increment half days count
-            } else if (status === "CL" || status === "L") {
+            } else if (status === "CL" || status === "L" ) {
                 leavesTaken += 1; // Count leaves
+            }else if (status ==="A"){
+                attng+=1;
             }
         });
 
-        return { empCode, empName, totalWorkingDays, leavesTaken, halfDaysTaken };
+        return { empCode, empName, totalWorkingDays, leavesTaken, halfDaysTaken, attng };
     });
 
     // Sort the summary in descending order based on totalWorkingDays
     workingDaysSummary.sort((a, b) => b.totalWorkingDays - a.totalWorkingDays);
 
-    updateTable(workingDaysSummary, ["Employee Code", "Employee Name", "Total Working Days", "Leaves Taken", "Half Days Taken"]);
+    updateTable(workingDaysSummary, ["Employee Code", "Employee Name", "Total Working Days", "Leaves Taken", "Half Days Taken" , "Attendence not generated/granted"]);
 }
 
 
@@ -194,29 +197,45 @@ function calculateSundaysWorked() {
   updateTable(sundaysSummary, ["Employee Code", "Employee Name", "Sundays Worked"]);
 }
 
+
+
 // Function to calculate Saturdays worked
 function calculateSaturdaysWorked() {
-  if (!attendanceData.length) {
-      alert("No JSON file loaded! Please upload a file first.");
-      return;
-  }
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
 
-  const saturdaysSummary = attendanceData.map(employee => {
-      const empCode = employee.EmployeeCode;
-      const empName = employee.EmployeeName;
-      const saturdaysWorked = employee.Attendance.reduce((total, record) => {
-          return total + (record.WeekDay.trim() === "Sat" && record.Status.trim() === "P" ? 1 : 0);
-      }, 0);
+    const saturdaysSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        let saturdaysWorked = 0;
+        let totalSaturdayHours = 0;
 
-      // Only include employees who worked on Saturdays
-      return saturdaysWorked > 0 ? { empCode, empName, saturdaysWorked } : null;
-  }).filter(employee => employee !== null); // Filter out null values
+        employee.Attendance.forEach(record => {
+            if (record.WeekDay.trim() === "Sat" && record.Status.trim() === "WO") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
 
-  // Sort in descending order based on saturdaysWorked
-  saturdaysSummary.sort((a, b) => b.saturdaysWorked - a.saturdaysWorked);
+                if (inTimeDecimal && outTimeDecimal) {
+                    saturdaysWorked++;
+                    totalSaturdayHours += (outTimeDecimal - inTimeDecimal);
+                }
+            }
+        });
 
-  updateTable(saturdaysSummary, ["Employee Code", "Employee Name", "Saturdays Worked"]);
+        // Only include employees who worked on WO Saturdays
+        return saturdaysWorked > 0 
+            ? { empCode, empName, saturdaysWorked, totalSaturdayHours: totalSaturdayHours.toFixed(2) } 
+            : null;
+    }).filter(employee => employee !== null); // Filter out null values
+
+    // Sort in descending order based on saturdaysWorked
+    saturdaysSummary.sort((a, b) => b.saturdaysWorked - a.saturdaysWorked);
+
+    updateTable(saturdaysSummary, ["Employee Code", "Employee Name", "Saturdays Worked", "Total Hours Worked"]);
 }
+
 
 
 function calculateAverageHours() {
