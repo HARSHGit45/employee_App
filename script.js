@@ -418,3 +418,49 @@ function convertTimeToDecimal(timeString) {
 
 
 
+
+// Function to calculate the total days with Attendance Not Granted
+function calculateAbsentLeave() {
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
+
+    const absentSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        const totalAbsentDays = employee.Attendance.reduce((total, record) => {
+            return total + (record.Status.trim().toUpperCase() === "A" ? 1 : 0);
+        }, 0);
+
+        return { empCode, empName, totalAbsentDays };
+    }).filter(employee => employee.totalAbsentDays > 0); // Filter to only include employees with absences
+
+    // Sort in descending order based on totalAbsentDays
+    absentSummary.sort((a, b) => b.totalAbsentDays - a.totalAbsentDays);
+
+    updateTable(absentSummary, ["Employee Code", "Employee Name", "Total Days with Attendance Not Granted"]);
+}
+
+// Function to calculate the total days with Confirmed Leave
+function calculateConfirmLeave() {
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
+
+    const confirmedLeaveSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        const totalConfirmedLeaves = employee.Attendance.reduce((total, record) => {
+            return total + (record.Status.trim().toUpperCase() === "CL" ? 1 : 0);
+        }, 0);
+
+        return { empCode, empName, totalConfirmedLeaves };
+    }).filter(employee => employee.totalConfirmedLeaves > 0); // Filter to only include employees with confirmed leaves
+
+    // Sort in descending order based on totalConfirmedLeaves
+    confirmedLeaveSummary.sort((a, b) => b.totalConfirmedLeaves - a.totalConfirmedLeaves);
+
+    updateTable(confirmedLeaveSummary, ["Employee Code", "Employee Name", "Total Confirmed Leave Days"]);
+}
