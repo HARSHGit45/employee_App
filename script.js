@@ -78,6 +78,14 @@ function uploadExcel() {
             // Directly load data for further operations instead of downloading it
             attendanceData = employeeData; // Assuming attendanceData is defined globally
             alert("Excel data loaded successfully and ready for further processing!");
+
+            document.getElementById('employeeCount').innerText = `Number of Employees: ${employeeData.length}`;
+            document.getElementById('sheetInfo').innerText = `Sheet Name: ${sheetName}`;
+            document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
+            document.getElementById('departmentInfo').innerText = `Department: ${department}`;
+            document.getElementById('infoFooter').classList.remove('d-none');
+            
+
             document.getElementById('processingButtons').classList.remove('d-none');
             $('#dataModal').modal('hide'); 
         };

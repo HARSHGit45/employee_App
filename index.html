@@ -20,7 +20,15 @@
             background-attachment: fixed;
             color: #333;
         }
-       
+
+        .footer p {
+            margin: 0 15px; /* Adjusts the horizontal spacing between items */
+        }
+
+
+        .id{
+            background-color: aliceblue;
+        }       
            
             .header {
                 position: relative;
@@ -144,7 +152,28 @@
 
 
 
-<a id="downloadLink" class="text-center" style="display:none;"></a>
+<a id="downloadLink" class="text-center "></a>
+
+<div class="footer text-center mt-4 bg-white py-3" id="infoFooter">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <p id="employeeCount" class="font-weight-bold"></p>
+            </div>
+            <div class="col-auto">
+                <p id="sheetInfo" class="font-weight-bold"></p>
+            </div>
+            <div class="col-auto">
+                <p id="daysInfo" class="font-weight-bold"></p>
+            </div>
+            <div class="col-auto">
+                <p id="departmentInfo" class="font-weight-bold"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <script src="script.js">
   
