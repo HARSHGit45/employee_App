@@ -24,6 +24,8 @@ function uploadExcel() {
             const department = document.getElementById('department').value;
             const wd = document.getElementById('wd').value;
 
+            dept  = department;
+
             if (!sheetName || isNaN(daysInMonth) || !department) {
                 alert("Please fill out all fields.");
                 return;
@@ -85,6 +87,7 @@ function uploadExcel() {
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
             document.getElementById('wdd').innerText = `Working days: ${wd}`;
+            document.getElementById('hrs').innerText = `Total Expected Working Hours: ${wd*8}`;
             document.getElementById('infoFooter').classList.remove('d-none');
             
 
@@ -140,20 +143,32 @@ function calculateTotalWorkingDays() {
     const workingDaysSummary = attendanceData.map(employee => {
         const empCode = employee.EmployeeCode;
         const empName = employee.EmployeeName;
-        const totalWorkingDays = employee.Attendance.reduce((total, record) => {
-            if (record.Status.trim().toUpperCase() === "P") return total + 1; // Full present day
-            if (record.Status.trim().toUpperCase() === "1/2P 1/2CL") return total + 0.5; // Half present
-            return total; // If absent, do not count
-        }, 0);
+        
+        let totalWorkingDays = 0;
+        let leavesTaken = 0;
+        let halfDaysTaken = 0;
 
-        return { empCode, empName, totalWorkingDays };
+        employee.Attendance.forEach(record => {
+            const status = record.Status.trim().toUpperCase();
+            if (status === "P") {
+                totalWorkingDays += 1; // Full present day
+            } else if (status === "1/2P 1/2CL") {
+                totalWorkingDays += 0.5; // Half present
+                halfDaysTaken += 1; // Increment half days count
+            } else if (status === "CL" || status === "L") {
+                leavesTaken += 1; // Count leaves
+            }
+        });
+
+        return { empCode, empName, totalWorkingDays, leavesTaken, halfDaysTaken };
     });
 
     // Sort the summary in descending order based on totalWorkingDays
     workingDaysSummary.sort((a, b) => b.totalWorkingDays - a.totalWorkingDays);
 
-    updateTable(workingDaysSummary, ["Employee Code", "Employee Name", "Total Working Days"]);
+    updateTable(workingDaysSummary, ["Employee Code", "Employee Name", "Total Working Days", "Leaves Taken", "Half Days Taken"]);
 }
+
 
 
 function calculateSundaysWorked() {
@@ -205,78 +220,86 @@ function calculateSaturdaysWorked() {
 
 
 function calculateAverageHours() {
-  if (!attendanceData || attendanceData.length === 0) {
-      alert("No attendance data loaded!");
-      return;
-  }
+    if (!attendanceData || attendanceData.length === 0) {
+        alert("No attendance data loaded!");
+        return;
+    }
 
-  const avgHoursSummary = attendanceData.map(employee => {
-      const empCode = employee.EmployeeCode;
-      const empName = employee.EmployeeName;
+    const avgHoursSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
 
-      let totalHours = 0;
-      let workingDays = 0;
+        let totalHours = 0;
+        let workingDays = 0;
 
-      employee.Attendance.forEach(record => {
-          if (record.Status.trim() === "P") {
-              const inTimeDecimal = convertTimeToDecimal(record.In);
-              const outTimeDecimal = convertTimeToDecimal(record.Out);
+        employee.Attendance.forEach(record => {
+            if (record.Status.trim() === "P") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
 
-              if (inTimeDecimal && outTimeDecimal) {
-                  totalHours += (outTimeDecimal - inTimeDecimal);
-                  workingDays++;
-              }
-          }
-      });
+                if (inTimeDecimal && outTimeDecimal) {
+                    totalHours += (outTimeDecimal - inTimeDecimal);
+                    workingDays++;
+                }
+            }
+        });
 
-      const avgHours = workingDays > 0 ? (totalHours / workingDays) : 0;
+        const avgHours = workingDays > 0 ? (totalHours / workingDays) : 0;
 
-      let finalAvgHours;
+        let finalAvgHours;
 
-      // Apply custom rounding logic based on decimal part
-      if (avgHours % 1 >= 0.55) {
-          finalAvgHours = Math.ceil(avgHours); // Round up to the nearest whole number
-      } else {
-          finalAvgHours = avgHours.toFixed(2); // Keep two decimal places
-      }
+        // Apply custom rounding logic based on decimal part
+        if (avgHours % 1 >= 0.55) {
+            finalAvgHours = Math.ceil(avgHours); // Round up to the nearest whole number
+        } else {
+            finalAvgHours = avgHours.toFixed(2); // Keep two decimal places
+        }
 
-      return { empCode, empName, avgHours: finalAvgHours };
-  });
+        return { empCode, empName, avgHours: finalAvgHours };
+    });
 
-  // Update the table with average hours summary
-  updateTable(avgHoursSummary,["Employee Code", "Employee Name", "Average Hours"]);
+    // Sort the avgHoursSummary array in descending order by avgHours
+    avgHoursSummary.sort((a, b) => b.avgHours - a.avgHours);
+
+    // Update the table with average hours summary
+    updateTable(avgHoursSummary, ["Employee Code", "Employee Name", "Average Hours"]);
 }
+
 
 
 
 // Function to calculate total working hours
 function calculateTotalWorkingHours() {
-  if (!attendanceData.length) {
-      alert("No JSON file loaded! Please upload a file first.");
-      return;
-  }
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
 
-  const totalHoursSummary = attendanceData.map(employee => {
-      const empCode = employee.EmployeeCode;
-      const empName = employee.EmployeeName;
-      let totalHours = 0;
+    const totalHoursSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        let totalHours = 0;
 
-      employee.Attendance.forEach(record => {
-          if (record.In && record.Out && record.Status.trim() === "P") {
-              const inTimeDecimal = convertTimeToDecimal(record.In);
-              const outTimeDecimal = convertTimeToDecimal(record.Out);
+        employee.Attendance.forEach(record => {
+            if (record.In && record.Out && record.Status.trim() === "P") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
 
-              if (inTimeDecimal && outTimeDecimal) {
-                  totalHours += (outTimeDecimal - inTimeDecimal);
-              }
-          }
-      });
+                if (inTimeDecimal && outTimeDecimal) {
+                    totalHours += (outTimeDecimal - inTimeDecimal);
+                }
+            }
+        });
 
-      return { empCode, empName, totalHours: totalHours.toFixed(2) };
-  });
+        return { empCode, empName, totalHours: totalHours.toFixed(2) };
+    });
 
-  updateTable(totalHoursSummary, ["Employee Code", "Employee Name", "Total Hours"]);
+    // Sort the totalHoursSummary array in descending order by totalHours
+    totalHoursSummary.sort((a, b) => b.totalHours - a.totalHours);
+
+    updateTable(totalHoursSummary, ["Employee Code", "Employee Name", "Total Hours"]);
 }
+
 
 // Function to calculate average department working hours
 function calculateDeptWorkingHours() {
