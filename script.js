@@ -190,31 +190,41 @@ function calculateTotalWorkingDays() {
 
 
 function calculateSundaysWorked() {
-  if (!attendanceData.length) {
-      alert("No JSON file loaded! Please upload a file first.");
-      return;
-  }
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
 
-  const sundaysSummary = attendanceData.map(employee => {
-      const empCode = employee.EmployeeCode;
-      const empName = employee.EmployeeName;
-      const sundaysWorked = employee.Attendance.reduce((total, record) => {
-          return total + (record.WeekDay.trim() === "Sun" && record.Status.trim() === "P" ? 1 : 0);
-      }, 0);
+    const sundaysSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        const sundaysWorkedDates = [];
 
-      // Only include employees who worked on Sundays
-      return sundaysWorked > 0 ? { empCode, empName, sundaysWorked } : null;
-  }).filter(employee => employee !== null); // Filter out null values
+        const sundaysWorked = employee.Attendance.reduce((total, record) => {
+            // Use a case-insensitive match to detect Sunday, accounting for possible formatting variations
+            const isSunday = record.WeekDay.trim().toLowerCase() === "Sun";
+            const isPresent = record.Status.trim().toUpperCase() === "WO";
 
-  // Sort in descending order based on sundaysWorked
-  sundaysSummary.sort((a, b) => b.sundaysWorked - a.sundaysWorked);
+            if (isSunday && isPresent) {
+                sundaysWorkedDates.push(record.Day); // Collect the date for each worked Sunday
+                return total + 1;
+            }
+            return total;
+        }, 0);
 
-  updateTable(sundaysSummary, ["Employee Code", "Employee Name", "Sundays Worked"]);
+        return sundaysWorked > 0 
+            ? { empCode, empName, sundaysWorked, sundaysWorkedDates: sundaysWorkedDates.join(', ') } 
+            : null;
+    }).filter(employee => employee !== null); // Filter out null values
+
+    // Sort in descending order based on sundaysWorked
+    sundaysSummary.sort((a, b) => b.sundaysWorked - a.sundaysWorked);
+
+    updateTable(sundaysSummary, ["Employee Code", "Employee Name", "Sundays Worked", "Worked Dates"]);
 }
 
 
 
-// Function to calculate Saturdays worked
 function calculateSaturdaysWorked() {
     if (!attendanceData.length) {
         alert("No JSON file loaded! Please upload a file first.");
@@ -226,6 +236,7 @@ function calculateSaturdaysWorked() {
         const empName = employee.EmployeeName;
         let saturdaysWorked = 0;
         let totalSaturdayHours = 0;
+        const saturdaysWorkedDates = [];
 
         employee.Attendance.forEach(record => {
             if (record.WeekDay.trim() === "Sat" && record.Status.trim() === "WO") {
@@ -235,21 +246,22 @@ function calculateSaturdaysWorked() {
                 if (inTimeDecimal && outTimeDecimal) {
                     saturdaysWorked++;
                     totalSaturdayHours += (outTimeDecimal - inTimeDecimal);
+                    saturdaysWorkedDates.push(record.Day); // Collect the date for each worked Saturday
                 }
             }
         });
 
-        // Only include employees who worked on WO Saturdays
         return saturdaysWorked > 0 
-            ? { empCode, empName, saturdaysWorked, totalSaturdayHours: totalSaturdayHours.toFixed(2) } 
+            ? { empCode, empName, saturdaysWorked, totalSaturdayHours: totalSaturdayHours.toFixed(2), saturdaysWorkedDates: saturdaysWorkedDates.join(', ') } 
             : null;
     }).filter(employee => employee !== null); // Filter out null values
 
     // Sort in descending order based on saturdaysWorked
     saturdaysSummary.sort((a, b) => b.saturdaysWorked - a.saturdaysWorked);
 
-    updateTable(saturdaysSummary, ["Employee Code", "Employee Name", "Saturdays Worked", "Total Hours Worked"]);
+    updateTable(saturdaysSummary, ["Employee Code", "Employee Name", "Saturdays Worked", "Total Hours Worked", "Worked Dates"]);
 }
+
 
 
 
@@ -394,6 +406,10 @@ function calculateDeptWorkingHours() {
 }
 
 
+
+
+
+
 // Function to update the table with dynamic data
 function updateTable(data, headers) {
   const tbody = document.querySelector("#outputTable tbody");
@@ -479,3 +495,126 @@ function calculateConfirmLeave() {
 
     updateTable(confirmedLeaveSummary, ["Employee Code", "Employee Name", "Total Confirmed Leave Days"]);
 }
+
+
+
+
+
+
+
+function generateEmployeeSummary() {
+    if (!attendanceData || attendanceData.length === 0) {
+        alert("No attendance data available! Please upload a file first.");
+        return;
+    }
+
+    const summaryData = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+
+        let totalWorkedDays = 0;
+        let leavesTaken = 0;
+        let halfDaysTaken = 0;
+        let attng = 0; // Attendance not granted
+        let totalHours = 0;
+
+        employee.Attendance.forEach(record => {
+            const status = record.Status.trim().toUpperCase();
+
+            if (status === "P") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
+
+                if (inTimeDecimal && outTimeDecimal) {
+                    totalHours += (outTimeDecimal - inTimeDecimal);
+                }
+                totalWorkedDays++;
+            } else if (status === "1/2P 1/2CL") {
+                totalWorkedDays += 0.5;
+                halfDaysTaken += 1;
+            } else if (status === "CL" || status === "L") {
+                leavesTaken += 1;
+            } else if (status === "A") {
+                attng += 1;
+            }
+        });
+
+        // Calculate average hours based on total worked days
+        const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : 0;
+
+        return {
+            empCode,
+            empName,
+            totalWorkedDays,
+            totalHours: totalHours.toFixed(2),
+            avgHours,
+            leavesTaken,
+            halfDaysTaken,
+            attng
+        };
+    });
+
+    // Sort by Total Worked Days in descending order
+    summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
+
+    // Display in the output table with the specified headers
+    updateTable(summaryData, [
+        "Employee Code", 
+        "Employee Name", 
+        "Total Worked Days", 
+        "Total Hours", 
+        "Average Hours", 
+        "Leaves Taken", 
+        "Half Days Taken", 
+        "Attendance Not Granted"
+    ]);
+}
+
+
+
+function generateDepartmentSummary() {
+    if (!attendanceData || attendanceData.length === 0) {
+        alert("No attendance data available! Please upload a file first.");
+        return;
+    }
+
+    const departmentName = dept; // Assuming `dept` is set from the modal input
+    const numberOfEmployees = attendanceData.length;
+    
+    let totalHours = 0;
+    let totalWorkedDays = 0;
+
+    // Calculate total hours and total working days for all employees
+    attendanceData.forEach(employee => {
+        employee.Attendance.forEach(record => {
+            if (record.Status.trim() === "P") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
+
+                if (inTimeDecimal && outTimeDecimal) {
+                    totalHours += (outTimeDecimal - inTimeDecimal);
+                    totalWorkedDays++;
+                }
+            }
+        });
+    });
+
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : 0;
+
+    const departmentSummary = [
+        {
+            departmentName,
+            numberOfEmployees,
+            totalHours: totalHours.toFixed(2),
+            avgHours
+        }
+    ];
+
+    // Update the table to display the department summary
+    updateTable(departmentSummary, ["Department Name", "Number of Employees", "Total Hours Worked", "Average Hours Worked"]);
+}
+
+
+
+
+
