@@ -134,7 +134,7 @@ function uploadExcel() {
 
             // Update information display
             document.getElementById('employeeCount').innerText = `Number of Employees: ${employeeData.length}`;
-            document.getElementById('sheetInfo').innerText = `Sheet Name: ${sheetName}`;
+            document.getElementById('sheetInfo').innerText = `Month: ${sheetName}`;
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
             document.getElementById('wdd').innerText = `Working days: ${wd}`;
