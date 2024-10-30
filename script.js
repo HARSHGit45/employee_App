@@ -1,5 +1,7 @@
 var dept = '';
 
+let attendanceData = [];
+
 function uploadExcel() {
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
@@ -31,17 +33,48 @@ function uploadExcel() {
         // Event listener for the submit button in the modal
         document.getElementById('submitData').onclick = function() {
             const sheetName = sheetDropdown.value; // Get selected sheet name
-            const daysInMonth = parseInt(document.getElementById('daysInMonth').value);
             const department = document.getElementById('department').value;
-            const wd = document.getElementById('wd').value;
-
             dept = department;
 
-            if (!sheetName || isNaN(daysInMonth) || !department) {
+            if (!sheetName || !department) {
                 alert("Please fill out all fields.");
                 return;
             }
 
+            // Extract month and year from sheet name
+            const monthYearRegex = /^(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|September|Oct|October|Nov|November|Dec|December)_(\d{4})$/i;
+            const match = sheetName.match(monthYearRegex);
+            if (!match) {
+                alert("Invalid sheet name format. Expected format: Month_Year (e.g., January_2024).");
+                return;
+            }
+
+            const monthStr = match[1];
+            const year = parseInt(match[2]);
+            const month = new Date(`${monthStr} 1, ${year}`).getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Calculate working days and working Saturdays
+            let totalWorkingDays = 0;
+            let workingSaturdays = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+
+                if (dayOfWeek === 6) {
+                    workingSaturdays++;
+                } else if (dayOfWeek !== 0) {
+                    totalWorkingDays++;
+                }
+            }
+
+            const alternateWorkingSaturdays = Math.ceil(workingSaturdays / 2); // Assuming half-day for alternate Saturdays
+            const wd = totalWorkingDays + alternateWorkingSaturdays;
+
+            // Calculate expected working hours
+            const expectedHoursSingleEmployee = (totalWorkingDays * 8) + (alternateWorkingSaturdays * 4);
+            
+          
             // Check if the specified sheet exists
             if (!workbook.Sheets[sheetName]) {
                 alert(`Sheet ${sheetName} does not exist in the file.`);
@@ -49,35 +82,31 @@ function uploadExcel() {
             }
 
             const worksheet = workbook.Sheets[sheetName];
-            let json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-
-            json = json.slice(2);
-
-
-            // Process JSON to match your required structure
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
             const employeeData = [];
-
             for (let i = 0; i < json.length; i++) {
                 const row = json[i];
                 const employeeCodeName = row[0];
 
-                if (employeeCodeName && employeeCodeName.includes("Emp")) {
-                    const employeeInfo = employeeCodeName.split(" ");
+                if (employeeCodeName && /Emp|EXAMINATION DEPARTMENT/i.test(employeeCodeName)) {
+                    // Extract employee code and name with regex
+                    const regex = /(?:EXAMINATION DEPARTMENT\s+)?(\w+)\s+([\w\s]+)/;
+                    const match = employeeCodeName.match(regex);
 
-                    if (employeeInfo.length >= 3) {
-                        const empCode = employeeInfo[2];
-                        const empName = employeeInfo[3];
+                    if (match) {
+                        const empCode = match[1].trim();
+                        const empName = match[2].trim();
                         const daysInfo = [];
 
-                        // Collecting attendance data for the specified number of days
+                        // Collect attendance data based on days in month
                         for (let day = 1; day <= daysInMonth; day++) {
                             const dayInfo = {
                                 "Day": day,
-                                "WeekDay": json[i + 1][day],  // Adjust this based on your actual data structure
-                                "Status": json[i + 3][day],    // Adjust index based on the actual row for Status
-                                "In": json[i + 4][day],        // Adjust index based on actual row for In time
-                                "Out": json[i + 7][day]        // Adjust index based on actual row for Out time
+                                "WeekDay": json[i + 1] ? json[i + 1][day] : "", // Adjust index as needed
+                                "Status": json[i + 3] ? json[i + 3][day] : "",  // Adjust index as needed
+                                "In": json[i + 4] ? json[i + 4][day] : "",      // Adjust index as needed
+                                "Out": json[i + 7] ? json[i + 7][day] : ""      // Adjust index as needed
                             };
                             daysInfo.push(dayInfo);
                         }
@@ -93,19 +122,27 @@ function uploadExcel() {
                 }
             }
 
-            // Directly load data for further operations instead of downloading it
-            attendanceData = employeeData; // Assuming attendanceData is defined globally
+            // Set the global attendance data variable
+            attendanceData = employeeData;
             alert("Excel data loaded successfully and ready for further processing!");
 
+            console.log(attendanceData);
+            const numEmployees = attendanceData.length;
+            const expectedHoursDepartment = expectedHoursSingleEmployee * numEmployees;
+            console.log(attendanceData.length);
+
+
+            // Update information display
             document.getElementById('employeeCount').innerText = `Number of Employees: ${employeeData.length}`;
             document.getElementById('sheetInfo').innerText = `Sheet Name: ${sheetName}`;
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
             document.getElementById('wdd').innerText = `Working days: ${wd}`;
-            document.getElementById('hrs').innerText = `Total Expected Working Hours: ${(wd-1)*8}`;
+            document.getElementById('hrsSingle').innerText = `Expected Working Hours (Single Employee): ${expectedHoursSingleEmployee}`;
+            document.getElementById('hrsDept').innerText = `Expected Working Hours (Department): ${expectedHoursDepartment}`;
             document.getElementById('infoFooter').classList.remove('d-none');
-            
 
+            // Enable the processing buttons
             document.getElementById('processingButtons').classList.remove('d-none');
             $('#dataModal').modal('hide'); 
         };
@@ -502,6 +539,15 @@ function calculateConfirmLeave() {
 
 
 
+// Helper function to convert decimal hours
+function formatDecimalHours(decimalHours) {
+    const hours = Math.floor(decimalHours);
+    const minutes = (decimalHours - hours) * 60;
+    const adjustedHours = minutes >= 60 ? hours + 1 : hours;
+    const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
+    return `${adjustedHours}.${adjustedMinutes.toFixed(0)}`;
+}
+
 function generateEmployeeSummary() {
     if (!attendanceData || attendanceData.length === 0) {
         alert("No attendance data available! Please upload a file first.");
@@ -539,8 +585,8 @@ function generateEmployeeSummary() {
             }
         });
 
-        // Calculate average hours based on total worked days
-        const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : 0;
+        // Calculate average hours based on total worked days and format it
+        const avgHours = totalWorkedDays > 0 ? formatDecimalHours(totalHours / totalWorkedDays) : "0.00";
 
         return {
             empCode,
@@ -569,7 +615,6 @@ function generateEmployeeSummary() {
         "Attendance Not Granted"
     ]);
 }
-
 
 
 function generateDepartmentSummary() {
