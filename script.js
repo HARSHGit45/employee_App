@@ -568,13 +568,29 @@ function generateEmployeeSummary() {
             const status = record.Status.trim().toUpperCase();
 
             if (status === "P") {
-                const inTimeDecimal = convertTimeToDecimal(record.In);
-                const outTimeDecimal = convertTimeToDecimal(record.Out);
+                // Directly convert inTime and outTime to decimal hours
+                const inTime = record.In.trim();  // Assuming " 09:06 "
+                const outTime = record.Out.trim(); // Assuming " 17:04 "
 
-                if (inTimeDecimal && outTimeDecimal) {
-                    totalHours += (outTimeDecimal - inTimeDecimal);
+                // Split and convert In time to decimal
+                const [inHours, inMinutes] = inTime.split(":").map(Number);
+                const inDecimal = inHours + (inMinutes / 60);
+
+                // Split and convert Out time to decimal
+                const [outHours, outMinutes] = outTime.split(":").map(Number);
+                const outDecimal = outHours + (outMinutes / 60);
+
+                // Calculate total worked hours for the day
+                if (inDecimal && outDecimal) {
+                    totalHours += (outDecimal - inDecimal);
                 }
-                totalWorkedDays++;
+
+                // Add to worked days (half-day for Saturday)
+                if (record.WeekDay === "Sat") {
+                    totalWorkedDays += 0.5; // Count as half a working day if it's Saturday
+                } else {
+                    totalWorkedDays++; // Full working day
+                }
             } else if (status === "1/2P 1/2CL") {
                 totalWorkedDays += 0.5;
                 halfDaysTaken += 1;
@@ -586,7 +602,7 @@ function generateEmployeeSummary() {
         });
 
         // Calculate average hours based on total worked days and format it
-        const avgHours = totalWorkedDays > 0 ? formatDecimalHours(totalHours / totalWorkedDays) : "0.00";
+        const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
 
         return {
             empCode,
@@ -615,6 +631,7 @@ function generateEmployeeSummary() {
         "Attendance Not Granted"
     ]);
 }
+
 
 
 function generateDepartmentSummary() {
