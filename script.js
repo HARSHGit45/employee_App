@@ -10,6 +10,7 @@ function uploadExcel() {
         alert("No file selected!");
         return;
     }
+    
 
     const reader = new FileReader();
     reader.onload = function(event) {
