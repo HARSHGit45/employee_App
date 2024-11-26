@@ -141,8 +141,6 @@ function uploadExcel() {
             const workingDaysInput = document.getElementById('wd').value; // Get user input
             document.getElementById('wdd').innerText = `Working days: ${workingDaysInput}`; // Update footer
 
-            document.getElementById('hrsSingle').innerText = `Expected Working Hours (Single Employee): ${expectedHoursSingleEmployee}`;
-            document.getElementById('hrsDept').innerText = `Expected Working Hours (Department): ${expectedHoursDepartment}`;
             document.getElementById('infoFooter').classList.remove('d-none');
 
             // Enable the processing buttons
@@ -514,7 +512,7 @@ function convertTimeToDecimal(timeString) {
 
 
 
-// Function to calculate the total days with Attendance Not Granted
+
 function calculateAbsentLeave() {
     if (!attendanceData.length) {
         alert("No JSON file loaded! Please upload a file first.");
