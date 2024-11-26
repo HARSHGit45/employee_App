@@ -137,7 +137,9 @@ function uploadExcel() {
             document.getElementById('sheetInfo').innerText = `Month: ${sheetName}`;
             document.getElementById('daysInfo').innerText = `Days in Month: ${daysInMonth}`;
             document.getElementById('departmentInfo').innerText = `Department: ${department}`;
-            document.getElementById('wdd').innerText = `Working days: ${wd}`;
+            const workingDaysInput = document.getElementById('wd').value; // Get user input
+            document.getElementById('wdd').innerText = `Working days: ${workingDaysInput}`; // Update footer
+
             document.getElementById('hrsSingle').innerText = `Expected Working Hours (Single Employee): ${expectedHoursSingleEmployee}`;
             document.getElementById('hrsDept').innerText = `Expected Working Hours (Department): ${expectedHoursDepartment}`;
             document.getElementById('infoFooter').classList.remove('d-none');
@@ -643,6 +645,23 @@ function generateEmployeeSummary() {
     // Sort by Total Worked Days in descending order
     summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
 
+    // Calculate total worked days, total hours, and average hours
+    const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
+    const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
+
+    // Add a final row with total summary
+    summaryData.push({
+        empCode: "Total",
+        empName: "Summary",
+        totalWorkedDays: totalWorkedDays.toFixed(2),
+        totalHours: totalHours.toFixed(2),
+        avgHours: avgHours,
+        leavesTaken: "",
+        halfDaysTaken: "",
+        attng: ""
+    });
+
     // Display in the output table with the specified headers
     updateTable(summaryData, [
         "Employee Code", 
@@ -658,13 +677,14 @@ function generateEmployeeSummary() {
 
 
 
+
 function generateDepartmentSummary() {
     if (!attendanceData || attendanceData.length === 0) {
         alert("No attendance data available! Please upload a file first.");
         return;
     }
 
-    const departmentName = dept; // Assuming `dept` is set from the modal input
+    const departmentName = dept; // Assuming `dept` is the department name provided by the user from the modal input
     const numberOfEmployees = attendanceData.length;
     
     let totalHours = 0;
@@ -679,28 +699,31 @@ function generateDepartmentSummary() {
 
                 if (inTimeDecimal && outTimeDecimal) {
                     totalHours += (outTimeDecimal - inTimeDecimal);
-                    totalWorkedDays++;
+
+                    // Handle weekends (e.g., Saturdays), assuming half days
+                    if (record.WeekDay.trim().toLowerCase() === "sat") {
+                        totalWorkedDays += 0.5; // Half day for Saturday
+                    } else {
+                        totalWorkedDays++; // Full day for weekdays
+                    }
                 }
             }
         });
     });
 
-    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : 0;
+    // Calculate the average hours worked per day
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
 
+    // Prepare the department summary data
     const departmentSummary = [
         {
-            departmentName,
+            departmentName: departmentName || "Department", // Default name if empty
             numberOfEmployees,
             totalHours: totalHours.toFixed(2),
             avgHours
         }
     ];
 
-    // Update the table to display the department summary
+    // Update the table with the department summary
     updateTable(departmentSummary, ["Department Name", "Number of Employees", "Total Hours Worked", "Average Hours Worked"]);
 }
-
-
-
-
-
