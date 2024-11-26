@@ -208,6 +208,7 @@ function calculateTotalWorkingDays() {
             } else if (status === "1/2P 1/2CL") {
                 totalWorkingDays += 0.5; // Half present
                 halfDaysTaken += 1; // Increment half days count
+            
             } else if (status === "CL" || status === "L" ) {
                 leavesTaken += 1; // Count leaves
             }else if (status ==="A"){
@@ -578,6 +579,7 @@ function generateEmployeeSummary() {
             } else if (status === "1/2P 1/2CL") {
                 totalWorkedDays += 0.5;
                 halfDaysTaken += 1;
+                totalHours += 4; 
             } else if (status === "CL" || status === "L") {
                 leavesTaken += 1;
             } else if (status === "A") {
