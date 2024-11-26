@@ -317,17 +317,38 @@ function calculateAverageHours() {
         let workingDays = 0;
 
         employee.Attendance.forEach(record => {
-            if (record.Status.trim() === "P") {
-                const inTimeDecimal = convertTimeToDecimal(record.In);
-                const outTimeDecimal = convertTimeToDecimal(record.Out);
+            const status = record.Status.trim();
+            const weekDay = record.WeekDay.trim();
 
-                if (inTimeDecimal && outTimeDecimal) {
-                    totalHours += (outTimeDecimal - inTimeDecimal);
-                    workingDays++;
+            // Only process records with "P" status (Present)
+            if (status === "P") {
+                // Directly process In and Out time to decimal format
+                const inTime = record.In.trim();  // Example: "09:06"
+                const outTime = record.Out.trim(); // Example: "17:04"
+
+                // Convert In time to decimal
+                const [inHours, inMinutes] = inTime.split(":").map(Number);
+                const inDecimal = inHours + (inMinutes / 60);
+
+                // Convert Out time to decimal
+                const [outHours, outMinutes] = outTime.split(":").map(Number);
+                const outDecimal = outHours + (outMinutes / 60);
+
+                // Calculate total worked hours for the day
+                if (inDecimal && outDecimal) {
+                    totalHours += (outDecimal - inDecimal);
+                    
+                    // If it's a Saturday, count as half a working day
+                    if (weekDay === "Sat") {
+                        workingDays += 0.5; // Count as 0.5 working day on Saturday
+                    } else {
+                        workingDays++; // Count as 1 full working day for other days
+                    }
                 }
             }
         });
 
+        // Calculate average hours based on total worked days
         const avgHours = workingDays > 0 ? (totalHours / workingDays) : 0;
 
         let finalAvgHours;
@@ -348,6 +369,8 @@ function calculateAverageHours() {
     // Update the table with average hours summary
     updateTable(avgHoursSummary, ["Employee Code", "Employee Name", "Average Hours"]);
 }
+
+
 
 
 
