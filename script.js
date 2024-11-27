@@ -203,7 +203,7 @@ function calculateTotalWorkingDays() {
         let attng = 0;
 
         employee.Attendance.forEach(record => {
-            const status = record.Status.trim().toUpperCase();
+            const status = record.Status?.trim().toUpperCase();
             if (status === "P") {
                 totalWorkingDays += 1; // Full present day
             } else if (status === "1/2P 1/2CL") {
@@ -241,8 +241,8 @@ function calculateSundaysWorked() {
 
         const sundaysWorked = employee.Attendance.reduce((total, record) => {
             // Use a case-insensitive match to detect Sunday, accounting for possible formatting variations
-            const isSunday = record.WeekDay.trim().toLowerCase() === "Sun";
-            const isPresent = record.Status.trim().toUpperCase() === "WO";
+            const isSunday = record.WeekDay?.trim().toLowerCase() === "Sun";
+            const isPresent = record.Status?.trim().toUpperCase() === "WO";
 
             if (isSunday && isPresent) {
                 sundaysWorkedDates.push(record.Day); // Collect the date for each worked Sunday
@@ -278,7 +278,7 @@ function calculateSaturdaysWorked() {
         const saturdaysWorkedDates = [];
 
         employee.Attendance.forEach(record => {
-            if (record.WeekDay.trim() === "Sat" && record.Status.trim() === "WO") {
+            if (record.WeekDay?.trim() === "Sat" && record.Status?.trim() === "WO") {
                 const inTimeDecimal = convertTimeToDecimal(record.In);
                 const outTimeDecimal = convertTimeToDecimal(record.Out);
 
@@ -318,14 +318,14 @@ function calculateAverageHours() {
         let workingDays = 0;
 
         employee.Attendance.forEach(record => {
-            const status = record.Status.trim();
-            const weekDay = record.WeekDay.trim();
+            const status = record.Status?.trim();
+            const weekDay = record.WeekDay?.trim();
 
             // Only process records with "P" status (Present)
             if (status === "P") {
                 // Directly process In and Out time to decimal format
-                const inTime = record.In.trim();  // Example: "09:06"
-                const outTime = record.Out.trim(); // Example: "17:04"
+                const inTime = record.In?.trim();  // Example: "09:06"
+                const outTime = record.Out?.trim(); // Example: "17:04"
 
                 // Convert In time to decimal
                 const [inHours, inMinutes] = inTime.split(":").map(Number);
@@ -389,7 +389,7 @@ function calculateTotalWorkingHours() {
         let totalHours = 0;
 
         employee.Attendance.forEach(record => {
-            if (record.In && record.Out && record.Status.trim() === "P") {
+            if (record.In && record.Out && record.Status?.trim() === "P") {
                 const inTimeDecimal = convertTimeToDecimal(record.In);
                 const outTimeDecimal = convertTimeToDecimal(record.Out);
 
@@ -425,7 +425,7 @@ function calculateDeptWorkingHours() {
         let workingDays = 0;
 
         employee.Attendance.forEach(record => {
-            if (record.In && record.Out && record.Status.trim() === "P") {
+            if (record.In && record.Out && record.Status?.trim() === "P") {
                 const inTime = record.In; // In time in "HH:MM" format
                 const outTime = record.Out; // Out time in "HH:MM" format
 
@@ -523,7 +523,7 @@ function calculateAbsentLeave() {
         const empCode = employee.EmployeeCode;
         const empName = employee.EmployeeName;
         const totalAbsentDays = employee.Attendance.reduce((total, record) => {
-            return total + (record.Status.trim().toUpperCase() === "A" ? 1 : 0);
+            return total + (record.Status.trim()?.toUpperCase() === "A" ? 1 : 0);
         }, 0);
 
         return { empCode, empName, totalAbsentDays };
@@ -546,7 +546,7 @@ function calculateConfirmLeave() {
         const empCode = employee.EmployeeCode;
         const empName = employee.EmployeeName;
         const totalConfirmedLeaves = employee.Attendance.reduce((total, record) => {
-            return total + (record.Status.trim().toUpperCase() === "CL" ? 1 : 0);
+            return total + (record.Status.trim()?.toUpperCase() === "CL" ? 1 : 0);
         }, 0);
 
         return { empCode, empName, totalConfirmedLeaves };
@@ -692,7 +692,7 @@ function generateDepartmentSummary() {
     // Calculate total hours and total working days for all employees
     attendanceData.forEach(employee => {
         employee.Attendance.forEach(record => {
-            if (record.Status.trim() === "P") {
+            if (record.Status?.trim() === "P") {
                 const inTimeDecimal = convertTimeToDecimal(record.In);
                 const outTimeDecimal = convertTimeToDecimal(record.Out);
 
@@ -700,7 +700,7 @@ function generateDepartmentSummary() {
                     totalHours += (outTimeDecimal - inTimeDecimal);
 
                     // Handle weekends (e.g., Saturdays), assuming half days
-                    if (record.WeekDay.trim().toLowerCase() === "sat") {
+                    if (record.WeekDay.trim()?.toLowerCase() === "sat") {
                         totalWorkedDays += 0.5; // Half day for Saturday
                     } else {
                         totalWorkedDays++; // Full day for weekdays
