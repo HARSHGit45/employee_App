@@ -590,7 +590,7 @@ function generateEmployeeSummary() {
         let totalHours = 0;
 
         employee.Attendance.forEach(record => {
-            const status = record.Status.trim().toUpperCase();
+            const status = record.Status?.trim().toUpperCase();
 
             if (status === "P") {
                 // Directly convert inTime and outTime to decimal hours
