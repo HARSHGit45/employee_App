@@ -648,12 +648,13 @@ function generateEmployeeSummary() {
         // Calculate average hours using the formatDecimalHours function
         const avgDecimalHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
         const avgHoursFormatted = formatDecimalHours(avgDecimalHours);  // Use the helper function
+         const totalHoursFormatted = formatTotalHours(totalHours);
 
         return {
             empCode,
             empName,
             totalWorkedDays,
-            totalHours: totalHours.toFixed(2),
+            totalHours: totalHoursFormatted,
             avgHours: avgHoursFormatted,  // Updated average format
             leavesTaken,
             halfDaysTaken,
