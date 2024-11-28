@@ -578,6 +578,19 @@ function formatDecimalHours(decimalHours) {
     return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
 }
 
+function formatDecimalHours(decimalHours) {
+    // Check if decimalHours is a valid number
+    if (isNaN(decimalHours) || decimalHours <= 0) {
+        return "0h 0m";  // Return a default value if it's not a valid number
+    }
+
+    const hours = Math.floor(decimalHours);
+    const minutes = (decimalHours - hours) * 60;
+    const adjustedHours = minutes >= 60 ? hours + 1 : hours;
+    const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
+    return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
+}
+
 function generateEmployeeSummary() {
     if (!attendanceData || attendanceData.length === 0) {
         alert("No attendance data available! Please upload a file first.");
@@ -610,8 +623,9 @@ function generateEmployeeSummary() {
                 const [outHours, outMinutes] = outTime.split(":").map(Number);
                 const outDecimal = outHours + (outMinutes / 60);
 
-                // Calculate total worked hours for the day
-                if (inDecimal && outDecimal) {
+                // Check if inDecimal and outDecimal are valid numbers
+                if (!isNaN(inDecimal) && !isNaN(outDecimal)) {
+                    // Calculate total worked hours for the day
                     totalHours += (outDecimal - inDecimal);
                 }
 
