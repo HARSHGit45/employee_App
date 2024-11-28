@@ -562,15 +562,6 @@ function calculateConfirmLeave() {
 
 
 
-
-function formatDecimalHours(decimalHours) {
-    const hours = Math.floor(decimalHours);
-    const minutes = (decimalHours - hours) * 60;
-    const adjustedHours = minutes >= 60 ? hours + 1 : hours;
-    const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
-    return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
-}
-
 function formatTotalHours(totalDecimalHours) {
     // Convert the total decimal hours into total hours and minutes
     const totalMinutes = Math.round(totalDecimalHours * 60); // Convert to minutes
@@ -581,8 +572,10 @@ function formatTotalHours(totalDecimalHours) {
 
 function formatDecimalHours(decimalHours) {
     const hours = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
-    return `${hours}h ${minutes}m`;
+    const minutes = (decimalHours - hours) * 60;
+    const adjustedHours = minutes >= 60 ? hours + 1 : hours;
+    const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
+    return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
 }
 
 function generateEmployeeSummary() {
@@ -600,7 +593,6 @@ function generateEmployeeSummary() {
         let halfDaysTaken = 0;
         let attng = 0; // Attendance not granted
         let totalHours = 0;
-        let totalMinutes = 0; // Keep track of minutes separately
 
         employee.Attendance.forEach(record => {
             const status = record.Status?.trim().toUpperCase();
@@ -620,9 +612,7 @@ function generateEmployeeSummary() {
 
                 // Calculate total worked hours for the day
                 if (inDecimal && outDecimal) {
-                    const workedHours = outDecimal - inDecimal;
-                    totalHours += Math.floor(workedHours);
-                    totalMinutes += (workedHours - Math.floor(workedHours)) * 60; // Add remaining minutes
+                    totalHours += (outDecimal - inDecimal);
                 }
 
                 // Add to worked days (half-day for Saturday)
@@ -641,21 +631,15 @@ function generateEmployeeSummary() {
             }
         });
 
-        // Convert total minutes to hours if more than 60 minutes
-        const additionalHours = Math.floor(totalMinutes / 60);
-        totalHours += additionalHours;
-        totalMinutes = totalMinutes % 60; // Remaining minutes after converting to hours
-
-        // Format total hours and average hours
-        const formattedTotalHours = `${totalHours}h ${totalMinutes}m`;
-        const avgDecimalHours = totalWorkedDays > 0 ? (totalHours + totalMinutes / 60) / totalWorkedDays : 0;
-        const avgHoursFormatted = formatDecimalHours(avgDecimalHours);
+        // Calculate average hours using the formatDecimalHours function
+        const avgDecimalHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
+        const avgHoursFormatted = formatDecimalHours(avgDecimalHours);  // Use the helper function
 
         return {
             empCode,
             empName,
             totalWorkedDays,
-            totalHours: formattedTotalHours,  // Updated total hours format
+            totalHours: totalHours.toFixed(2),
             avgHours: avgHoursFormatted,  // Updated average format
             leavesTaken,
             halfDaysTaken,
@@ -667,24 +651,9 @@ function generateEmployeeSummary() {
     summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
 
     // Calculate total worked days, total hours, and average hours
-    let totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
-    let totalHours = 0;
-    let totalMinutes = 0;
-
-    summaryData.forEach(emp => {
-        const [hours, minutes] = emp.totalHours.split('h').map(str => str.trim()).filter(str => str !== "").map(Number);
-        totalHours += hours;
-        totalMinutes += minutes;
-    });
-
-    // Convert total minutes to hours
-    const additionalHours = Math.floor(totalMinutes / 60);
-    totalHours += additionalHours;
-    totalMinutes = totalMinutes % 60;
-
-    const formattedTotalHours = `${totalHours}h ${totalMinutes}m`;  // Format the final total hours
-
-    const avgHours = totalWorkedDays > 0 ? (totalHours + totalMinutes / 60) / totalWorkedDays : 0;
+    const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
+    const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
     const totalAvgHoursFormatted = formatDecimalHours(avgHours);  // Use the helper for summary row
 
     // Add a final row with total summary
@@ -692,7 +661,7 @@ function generateEmployeeSummary() {
         empCode: "Total",
         empName: "Summary",
         totalWorkedDays: totalWorkedDays.toFixed(2),
-        totalHours: formattedTotalHours,  // Apply formatDecimalHours for total hours
+        totalHours: totalHours.toFixed(2),
         avgHours: totalAvgHoursFormatted,  // Updated average format
         leavesTaken: "",
         halfDaysTaken: "",
