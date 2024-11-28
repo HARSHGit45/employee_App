@@ -641,22 +641,22 @@ function generateEmployeeSummary() {
             empCode,
             empName,
             totalWorkedDays,
-            totalHours: totalHoursFormatted,  // Updated total hours format
-            avgHours: avgHoursFormatted,        // Updated average hours format
+            totalHoursDecimal: totalHours,  // Store decimal hours
+            avgHours: avgDecimalHours,        // Store average decimal hours
             leavesTaken,
             halfDaysTaken,
             attng
         };
     });
 
-    // Sort by Total Worked Days in descending order
-    summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
-
-    // Calculate total worked days, total hours, and average hours
+    // Calculate total worked days, total hours (in decimal format), and average hours
     const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
-    const totalDecimalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
-    const avgHours = totalWorkedDays > 0 ? (totalDecimalHours / totalWorkedDays) : 0;
-    const totalHoursFormatted = formatTotalHours(totalDecimalHours);  // Use the helper for summary row
+    const totalHoursDecimal = summaryData.reduce((sum, emp) => sum + emp.totalHoursDecimal, 0);
+    const avgDecimalHours = totalWorkedDays > 0 ? (totalHoursDecimal / totalWorkedDays) : 0;
+
+    // Format total and average hours after the calculation
+    const totalHoursFormatted = formatTotalHours(totalHoursDecimal);  // Format total hours
+    const avgHoursFormatted = formatDecimalHours(avgDecimalHours);  // Format average hours
 
     // Add a final row with total summary
     summaryData.push({
@@ -664,7 +664,7 @@ function generateEmployeeSummary() {
         empName: "Summary",
         totalWorkedDays: totalWorkedDays.toFixed(2),
         totalHours: totalHoursFormatted,  // Updated total hours format
-        avgHours: formatDecimalHours(avgHours),  // Updated average hours format
+        avgHours: avgHoursFormatted,  // Updated average hours format
         leavesTaken: "",
         halfDaysTaken: "",
         attng: ""
