@@ -564,13 +564,12 @@ function calculateConfirmLeave() {
 
 
 
-// Helper function to convert decimal hours
 function formatDecimalHours(decimalHours) {
     const hours = Math.floor(decimalHours);
     const minutes = (decimalHours - hours) * 60;
     const adjustedHours = minutes >= 60 ? hours + 1 : hours;
     const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
-    return `${adjustedHours}.${adjustedMinutes.toFixed(0)}`;
+    return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
 }
 
 function generateEmployeeSummary() {
@@ -626,15 +625,16 @@ function generateEmployeeSummary() {
             }
         });
 
-        // Calculate average hours based on total worked days and format it
-        const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
+        // Calculate average hours using the formatDecimalHours function
+        const avgDecimalHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
+        const avgHoursFormatted = formatDecimalHours(avgDecimalHours);  // Use the helper function
 
         return {
             empCode,
             empName,
             totalWorkedDays,
             totalHours: totalHours.toFixed(2),
-            avgHours,
+            avgHours: avgHoursFormatted,  // Updated average format
             leavesTaken,
             halfDaysTaken,
             attng
@@ -647,7 +647,8 @@ function generateEmployeeSummary() {
     // Calculate total worked days, total hours, and average hours
     const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
     const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
-    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
+    const totalAvgHoursFormatted = formatDecimalHours(avgHours);  // Use the helper for summary row
 
     // Add a final row with total summary
     summaryData.push({
@@ -655,7 +656,7 @@ function generateEmployeeSummary() {
         empName: "Summary",
         totalWorkedDays: totalWorkedDays.toFixed(2),
         totalHours: totalHours.toFixed(2),
-        avgHours: avgHours,
+        avgHours: totalAvgHoursFormatted,  // Updated average format
         leavesTaken: "",
         halfDaysTaken: "",
         attng: ""
@@ -673,6 +674,7 @@ function generateEmployeeSummary() {
         "Attendance Not Granted"
     ]);
 }
+
 
 
 
