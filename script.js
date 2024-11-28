@@ -662,38 +662,48 @@ function generateEmployeeSummary() {
         };
     });
 
-    // Sort by Total Worked Days in descending order
-    summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
+// Sort by Total Worked Days in descending order
+summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
 
-    // Calculate total worked days, total hours, and average hours
-    const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
-    const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
-    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
-    const totalAvgHoursFormatted = formatDecimalHours(avgHours);  // Use the helper for summary row
+// Calculate total worked days, total hours, and average hours
+const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
 
-    // Add a final row with total summary
-    summaryData.push({
-        empCode: "Total",
-        empName: "Summary",
-        totalWorkedDays: totalWorkedDays.toFixed(2),
-        totalHours: totalHours.toFixed(2),
-        avgHours: totalAvgHoursFormatted,  // Updated average format
-        leavesTaken: "",
-        halfDaysTaken: "",
-        attng: ""
-    });
+// Calculate total decimal hours first (without formatting)
+const totalDecimalHours = summaryData.reduce((sum, emp) => {
+    // Remove 'h' and 'm' from formatted hours, and convert to decimal format for summing
+    const [hours, minutes] = emp.totalHours.split('h').map(part => part.trim());
+    const totalDecimal = parseFloat(hours) + (parseFloat(minutes) / 60);
+    return sum + totalDecimal;
+}, 0);
 
-    // Display in the output table with the specified headers
-    updateTable(summaryData, [
-        "Employee Code", 
-        "Employee Name", 
-        "Total Worked Days", 
-        "Total Hours", 
-        "Average Hours", 
-        "Leaves Taken", 
-        "Half Days Taken", 
-        "Attendance Not Granted"
-    ]);
+// Calculate the average hours in decimal format
+const avgHours = totalWorkedDays > 0 ? (totalDecimalHours / totalWorkedDays) : 0;
+const totalAvgHoursFormatted = formatDecimalHours(avgHours);  // Use the helper to format the average
+
+// Add a final row with total summary
+summaryData.push({
+    empCode: "Total",
+    empName: "Summary",
+    totalWorkedDays: totalWorkedDays.toFixed(2),
+    totalHours: formatTotalHours(totalDecimalHours),  // Format the total hours in h/m format
+    avgHours: totalAvgHoursFormatted,  // Updated average format
+    leavesTaken: "",
+    halfDaysTaken: "",
+    attng: ""
+});
+
+// Display in the output table with the specified headers
+updateTable(summaryData, [
+    "Employee Code", 
+    "Employee Name", 
+    "Total Worked Days", 
+    "Total Hours", 
+    "Average Hours", 
+    "Leaves Taken", 
+    "Half Days Taken", 
+    "Attendance Not Granted"
+]);
+
 }
 
 
