@@ -563,7 +563,6 @@ function calculateConfirmLeave() {
 
 
 
-
 function formatDecimalHours(decimalHours) {
     const hours = Math.floor(decimalHours);
     const minutes = (decimalHours - hours) * 60;
@@ -572,119 +571,12 @@ function formatDecimalHours(decimalHours) {
     return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
 }
 
-function generateEmployeeSummary() {
-    if (!attendanceData || attendanceData.length === 0) {
-        alert("No attendance data available! Please upload a file first.");
-        return;
-    }
-
-    const summaryData = attendanceData.map(employee => {
-        const empCode = employee.EmployeeCode;
-        const empName = employee.EmployeeName;
-
-        let totalWorkedDays = 0;
-        let leavesTaken = 0;
-        let halfDaysTaken = 0;
-        let attng = 0; // Attendance not granted
-        let totalHours = 0;
-
-        employee.Attendance.forEach(record => {
-            const status = record.Status?.trim().toUpperCase();
-
-            if (status === "P") {
-                // Directly convert inTime and outTime to decimal hours
-                const inTime = record.In.trim();  // Assuming " 09:06 "
-                const outTime = record.Out.trim(); // Assuming " 17:04 "
-
-                // Split and convert In time to decimal
-                const [inHours, inMinutes] = inTime.split(":").map(Number);
-                const inDecimal = inHours + (inMinutes / 60);
-
-                // Split and convert Out time to decimal
-                const [outHours, outMinutes] = outTime.split(":").map(Number);
-                const outDecimal = outHours + (outMinutes / 60);
-
-                // Calculate total worked hours for the day
-                if (inDecimal && outDecimal) {
-                    totalHours += (outDecimal - inDecimal);
-                }
-
-                // Add to worked days (half-day for Saturday)
-                if (record.WeekDay === "Sat") {
-                    totalWorkedDays += 0.5; // Count as half a working day if it's Saturday
-                } else {
-                    totalWorkedDays++; // Full working day
-                }
-            } else if (status === "1/2P 1/2CL") {
-                totalWorkedDays += 0.5;
-                halfDaysTaken += 1;
-            } else if (status === "CL" || status === "L") {
-                leavesTaken += 1;
-            } else if (status === "A") {
-                attng += 1;
-            }
-        });
-
-        // Calculate average hours using the formatDecimalHours function
-        const avgDecimalHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
-        const avgHoursFormatted = formatDecimalHours(avgDecimalHours);  // Use the helper function
-
-        return {
-            empCode,
-            empName,
-            totalWorkedDays,
-            totalHours: totalHours.toFixed(2),
-            avgHours: avgHoursFormatted,  // Updated average format
-            leavesTaken,
-            halfDaysTaken,
-            attng
-        };
-    });
-
-    // Sort by Total Worked Days in descending order
-    summaryData.sort((a, b) => b.totalWorkedDays - a.totalWorkedDays);
-
-    // Calculate total worked days, total hours, and average hours
-    const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
-    const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
-    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
-    const totalAvgHoursFormatted = formatDecimalHours(avgHours);  // Use the helper for summary row
-
-    // Add a final row with total summary
-    summaryData.push({
-        empCode: "Total",
-        empName: "Summary",
-        totalWorkedDays: totalWorkedDays.toFixed(2),
-        totalHours: totalHours.toFixed(2),
-        avgHours: totalAvgHoursFormatted,  // Updated average format
-        leavesTaken: "",
-        halfDaysTaken: "",
-        attng: ""
-    });
-
-    // Display in the output table with the specified headers
-    updateTable(summaryData, [
-        "Employee Code", 
-        "Employee Name", 
-        "Total Worked Days", 
-        "Total Hours", 
-        "Average Hours", 
-        "Leaves Taken", 
-        "Half Days Taken", 
-        "Attendance Not Granted"
-    ]);
-}
-
-
-
-
-
-function formatTotalHours(decimalHours) {
-    const hours = Math.floor(decimalHours);
-    const minutes = (decimalHours - hours) * 60;
-    const adjustedHours = minutes >= 60 ? hours + 1 : hours;
-    const adjustedMinutes = minutes >= 60 ? minutes - 60 : minutes;
-    return `${adjustedHours}h ${adjustedMinutes.toFixed(0)}m`;
+function formatTotalHours(totalDecimalHours) {
+    // Convert the total decimal hours into total hours and minutes
+    const totalMinutes = Math.round(totalDecimalHours * 60); // Convert to minutes
+    const totalHours = Math.floor(totalMinutes / 60); // Get hours
+    const remainingMinutes = totalMinutes % 60; // Get remaining minutes
+    return `${totalHours}h ${remainingMinutes}m`;
 }
 
 function generateEmployeeSummary() {
@@ -762,9 +654,9 @@ function generateEmployeeSummary() {
 
     // Calculate total worked days, total hours, and average hours
     const totalWorkedDays = summaryData.reduce((sum, emp) => sum + emp.totalWorkedDays, 0);
-    const totalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
-    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays) : 0;
-    const totalHoursFormatted = formatTotalHours(totalHours);  // Use the helper for summary row
+    const totalDecimalHours = summaryData.reduce((sum, emp) => sum + parseFloat(emp.totalHours), 0);
+    const avgHours = totalWorkedDays > 0 ? (totalDecimalHours / totalWorkedDays) : 0;
+    const totalHoursFormatted = formatTotalHours(totalDecimalHours);  // Use the helper for summary row
 
     // Add a final row with total summary
     summaryData.push({
@@ -790,3 +682,55 @@ function generateEmployeeSummary() {
         "Attendance Not Granted"
     ]);
 }
+
+
+function generateDepartmentSummary() {
+    if (!attendanceData || attendanceData.length === 0) {
+        alert("No attendance data available! Please upload a file first.");
+        return;
+    }
+
+    const departmentName = dept; // Assuming `dept` is the department name provided by the user from the modal input
+    const numberOfEmployees = attendanceData.length;
+    
+    let totalHours = 0;
+    let totalWorkedDays = 0;
+
+    // Calculate total hours and total working days for all employees
+    attendanceData.forEach(employee => {
+        employee.Attendance.forEach(record => {
+            if (record.Status?.trim() === "P") {
+                const inTimeDecimal = convertTimeToDecimal(record.In);
+                const outTimeDecimal = convertTimeToDecimal(record.Out);
+
+                if (inTimeDecimal && outTimeDecimal) {
+                    totalHours += (outTimeDecimal - inTimeDecimal);
+
+                    // Handle weekends (e.g., Saturdays), assuming half days
+                    if (record.WeekDay.trim()?.toLowerCase() === "sat") {
+                        totalWorkedDays += 0.5; // Half day for Saturday
+                    } else {
+                        totalWorkedDays++; // Full day for weekdays
+                    }
+                }
+            }
+        });
+    });
+
+    // Calculate the average hours worked per day
+    const avgHours = totalWorkedDays > 0 ? (totalHours / totalWorkedDays).toFixed(2) : "0.00";
+
+    // Prepare the department summary data
+    const departmentSummary = [
+        {
+            departmentName: departmentName || "Department", // Default name if empty
+            numberOfEmployees,
+            totalHours: totalHours.toFixed(2),
+            avgHours
+        }
+    ];
+
+    // Update the table with the department summary
+    updateTable(departmentSummary, ["Department Name", "Number of Employees", "Total Hours Worked", "Average Hours Worked"]);
+}
+
