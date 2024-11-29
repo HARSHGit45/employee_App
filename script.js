@@ -687,9 +687,9 @@ summaryData.push({
     totalWorkedDays: totalWorkedDays.toFixed(2),
     totalHours: formatTotalHours(totalDecimalHours),  // Format the total hours in h/m format
     avgHours: totalAvgHoursFormatted,  // Updated average format
-    leavesTaken: "",
-    halfDaysTaken: "",
-    attng: ""
+   // leavesTaken: "",
+   // halfDaysTaken: "",
+   // attng: ""
 });
 
 // Display in the output table with the specified headers
