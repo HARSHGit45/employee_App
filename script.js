@@ -656,9 +656,9 @@ function generateEmployeeSummary() {
             totalWorkedDays,
             totalHours: totalHoursFormatted,
             avgHours: avgHoursFormatted,  // Updated average format
-            leavesTaken,
-            halfDaysTaken,
-            attng
+          //  leavesTaken,
+          //  halfDaysTaken,
+         //   attng
         };
     });
 
@@ -699,9 +699,9 @@ updateTable(summaryData, [
     "Total Worked Days", 
     "Total Hours", 
     "Average Hours", 
-    "Leaves Taken", 
-    "Half Days Taken", 
-    "Attendance Not Granted"
+   // "Leaves Taken", 
+  //  "Half Days Taken", 
+  //  "Attendance Not Granted"
 ]);
 
 }
