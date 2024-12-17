@@ -2,7 +2,7 @@ var dept = '';
 
 let attendanceData = [];
 
-function uploadExcel() {
+function uploadExcel() { 
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
     
@@ -10,7 +10,6 @@ function uploadExcel() {
         alert("No file selected!");
         return;
     }
-    
 
     const reader = new FileReader();
     reader.onload = function(event) {
@@ -74,8 +73,7 @@ function uploadExcel() {
 
             // Calculate expected working hours
             const expectedHoursSingleEmployee = (totalWorkingDays * 8) + (alternateWorkingSaturdays * 4);
-            
-          
+
             // Check if the specified sheet exists
             if (!workbook.Sheets[sheetName]) {
                 alert(`Sheet ${sheetName} does not exist in the file.`);
@@ -90,9 +88,10 @@ function uploadExcel() {
                 const row = json[i];
                 const employeeCodeName = row[0];
 
-                if (employeeCodeName && /Emp|EXAMINATION DEPARTMENT/i.test(employeeCodeName)) {
+                // Use the dynamic department name to match
+                if (employeeCodeName && new RegExp(dept, 'i').test(employeeCodeName)) {
                     // Extract employee code and name with regex
-                    const regex = /(?:EXAMINATION DEPARTMENT\s+)?(\w+)\s+([\w\s]+)/;
+                    const regex = new RegExp(`(?:${dept}\\s+)?(\\w+)\\s+([\\w\\s]+)`, 'i');
                     const match = employeeCodeName.match(regex);
 
                     if (match) {
@@ -132,7 +131,6 @@ function uploadExcel() {
             const expectedHoursDepartment = expectedHoursSingleEmployee * numEmployees;
             console.log(attendanceData.length);
 
-
             // Update information display
             document.getElementById('employeeCount').innerText = `Number of Employees: ${employeeData.length}`;
             document.getElementById('sheetInfo').innerText = `Month: ${sheetName}`;
@@ -151,8 +149,6 @@ function uploadExcel() {
 
     reader.readAsArrayBuffer(file);
 }
-
-
 
 // Function to upload JSON file
 function uploadJSON() {
@@ -183,6 +179,45 @@ function uploadJSON() {
   };
 
   fileInput.click(); // Trigger the file input dialog
+}
+
+function calculateTotalWorkingDays() {
+    if (!attendanceData.length) {
+        alert("No JSON file loaded! Please upload a file first.");
+        return;
+    }
+
+    const workingDaysSummary = attendanceData.map(employee => {
+        const empCode = employee.EmployeeCode;
+        const empName = employee.EmployeeName;
+        
+        let totalWorkingDays = 0;
+        let leavesTaken = 0;
+        let halfDaysTaken = 0;
+        let attng = 0;
+
+        employee.Attendance.forEach(record => {
+            const status = record.Status?.trim().toUpperCase();
+            if (status === "P") {
+                totalWorkingDays += 1; // Full present day
+            } else if (status === "1/2P 1/2CL") {
+                totalWorkingDays += 0.5; // Half present
+                halfDaysTaken += 1; // Increment half days count
+            
+            } else if (status === "CL" || status === "L" ) {
+                leavesTaken += 1; // Count leaves
+            }else if (status ==="A"){
+                attng+=1;
+            }
+        });
+
+        return { empCode, empName, totalWorkingDays, leavesTaken, halfDaysTaken, attng };
+    });
+
+    // Sort the summary in descending order based on totalWorkingDays
+    workingDaysSummary.sort((a, b) => b.totalWorkingDays - a.totalWorkingDays);
+
+    updateTable(workingDaysSummary, ["Employee Code", "Employee Name", "Total Working Days", "Leaves Taken", "Half Days Taken" , "Attendance not generated/granted"]);
 }
 
 
